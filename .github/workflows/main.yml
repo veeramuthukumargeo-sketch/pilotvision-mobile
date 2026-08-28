@@ -36,14 +36,35 @@ jobs:
           pip install --upgrade pip
           pip install buildozer==1.5.0 cython==0.29.36
 
-      - name: Build APK (real buildozer run, full log visible)
+      - name: Build APK (log saved regardless of outcome)
+        continue-on-error: true
         run: |
-          buildozer -v android debug
+          buildozer -v android debug 2>&1 | tee /tmp/build_full_log.txt
+          exit ${PIPESTATUS[0]}
+        shell: bash
         env:
           JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
 
-      - name: Upload APK artifact
+      - name: Always upload the full build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-build-log
+          path: /tmp/build_full_log.txt
+
+      - name: Upload APK if it was produced
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pilotvision-mobile-apk
           path: bin/*.apk
+          if-no-files-found: ignore
+
+      - name: Fail the job if the build actually failed
+        if: always()
+        run: |
+          if grep -q "BUILD FAILED\|Error:" /tmp/build_full_log.txt 2>/dev/null; then
+            echo "Build failed — see the full-build-log artifact for details."
+            grep -n "Error\|error:" /tmp/build_full_log.txt | tail -30
+            exit 1
+          fi
