@@ -38,7 +38,7 @@ jobs:
 
       - name: Build APK (real buildozer run, full log visible)
         run: |
-          yes | buildozer -v android debug
+          buildozer -v android debug
         env:
           JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
 
