@@ -63,4 +63,8 @@ jobs:
       - name: Fail the job if the build actually failed
         if: always()
         run: |
-          if grep -q "BUILD FAILED\|Error:"
+          if grep -q "BUILD FAILED\|Error:" /tmp/build_full_log.txt 2>/dev/null; then
+            echo "Build failed — see the full-build-log artifact for details."
+            grep -n "Error\|error:" /tmp/build_full_log.txt | tail -30
+            exit 1
+          fi
